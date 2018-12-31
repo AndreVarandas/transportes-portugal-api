@@ -1,7 +1,7 @@
 import app from './app'
 
 const { log } = console
-const PORT = 3000
+const PORT = process.env.port || 3000
 
 /**
  * Starts the application listening on port 3000
