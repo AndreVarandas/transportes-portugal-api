@@ -5,6 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
+    "postinstall": "npm run build",
     "build": "rimraf dist && tsc",
     "dev": "SKIP_IMPORT=true ts-node-dev $NODE_DEBUG_OPTION ./src/server.ts",
     "prestart": "npm run build",
