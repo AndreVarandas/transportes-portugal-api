@@ -13,8 +13,11 @@ before_script:
   - npm prune
 script:
   - npm run lint
-after_success:
-  - npm run semantic-release
+jobs:
+  include:
+    # Define the release stage that runs semantic-release
+    - stage: release
+      node_js: lts/*
 branches:
   except:
     - "/^v\\d+\\.\\d+\\.\\d+$/"
