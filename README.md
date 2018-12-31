@@ -64,6 +64,40 @@ And start the production package with
 npm start
 ```
 
+## Current Agencies
+
+- **Comboios de Portugal** - agency_key: 'cp'
+- **Metro de Lisboa** - agency_key: 'metro-lisboa'
+- **Carris** - agency_key: 'carris'
+- **Fertagus**- agency_key: 'fertagus'
+- **Soflusa** - agency_key: 'soflusa'
+- **Sulfertagus** - agency_key: 'sulfertagus'
+- **Transtejo** - agency_key: 'transtejo'
+- **Rodoviária** de Lisboa - agency_key: 'rodoviaria-de-lisboa'
+- **Transportes** Sul do Tejo - agency_key: 'tst'
+
+## Examples
+
+Querying for an agency POST `/agencies`
+
+```javascript
+// Get one agency by agency key
+fetch('http://localhost:3000/api/v1/agencies', {
+	method: 'POST',
+	headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+	body: JSON.stringify({ 
+	    query: { agency_key: 'metro-lisboa' } 
+	})
+})
+    .then(res => res.json())
+    .then(resp => console.log(resp))
+    
+// Will log details about the agency.
+```
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
@@ -75,15 +109,3 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Current Agencies
-
-- Comboios de Portugal
-- Metro de Lisboa
-- Carris
-- Fertagus
-- Soflusa
-- Sulfertagus
-- Transtejo
-- Rodoviária de Lisboa
-- Transportes Sul do Tejo
