@@ -1,6 +1,6 @@
 {
   "name": "transportes-portugal-api",
-  "version": "1.0.0",
+  "version": "0.0.0-development",
   "description": "",
   "main": "index.js",
   "private": true,
@@ -13,11 +13,12 @@
     "commit": "git-cz",
     "prod": "npm run build && npm run start",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
-    "lint": "tslint -p tsconfig.json"
+    "lint": "tslint -p tsconfig.json",
+    "semantic-release": "semantic-release"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AndreVarandas/transportes-portugal-api.git"
+    "url": "https://github.com/AndreVarandas/transportes-portugal-api.git"
   },
   "keywords": [],
   "author": "",
