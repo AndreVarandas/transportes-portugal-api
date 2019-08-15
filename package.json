@@ -44,7 +44,7 @@
     "husky": "^3.0.0",
     "prettier": "^1.15.3",
     "semantic-release": "^15.13.2",
-    "ts-node-dev": "^1.0.0-pre.32",
+    "ts-node-dev": "^1.0.0-pre.41",
     "tslint": "^5.12.0",
     "tslint-config-prettier": "^1.17.0"
   },
