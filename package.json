@@ -38,7 +38,7 @@
     "mongoose": "^5.7.5"
   },
   "devDependencies": {
-    "@semantic-release/github": "^5.2.8",
+    "@semantic-release/github": "^6.0.0",
     "commitizen": "^4.0.0",
     "cz-conventional-changelog": "^3.0.0",
     "husky": "^4.0.2",
