@@ -41,7 +41,7 @@
     "@semantic-release/github": "^6.0.0",
     "commitizen": "^4.0.0",
     "cz-conventional-changelog": "^3.0.0",
-    "husky": "^4.0.2",
+    "husky": "^4.0.10",
     "prettier": "^1.15.3",
     "semantic-release": "^16.0.0",
     "ts-node-dev": "^1.0.0-pre.32",
