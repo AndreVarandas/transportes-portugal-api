@@ -42,7 +42,7 @@
     "commitizen": "^4.0.0",
     "cz-conventional-changelog": "^3.0.0",
     "husky": "^4.1.0",
-    "prettier": "^1.15.3",
+    "prettier": "^2.0.0",
     "semantic-release": "^17.0.0",
     "ts-node-dev": "^1.0.0-pre.32",
     "tslint": "^5.12.0",
