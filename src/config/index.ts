@@ -5,17 +5,6 @@
 const gtfsImportConfiguration = {
     agencies: [
         {
-            agency_key: 'metro-lisboa',
-            exclude: [
-                'fare_attributes',
-                'fare_rules',
-                'transfers',
-                'feed_info',
-            ],
-            url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/2/gtfs_2.zip',
-        },
-        {
             agency_key: 'carris',
             exclude: [
                 'fare_attributes',
@@ -24,10 +13,10 @@ const gtfsImportConfiguration = {
                 'feed_info',
             ],
             url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/1/gtfs_1.zip',
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=1&u=web',
         },
         {
-            agency_key: 'fertagus',
+            agency_key: 'carristur',
             exclude: [
                 'fare_attributes',
                 'fare_rules',
@@ -35,29 +24,7 @@ const gtfsImportConfiguration = {
                 'feed_info',
             ],
             url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/13/gtfs_13.zip',
-        },
-        {
-            agency_key: 'soflusa',
-            exclude: [
-                'fare_attributes',
-                'fare_rules',
-                'transfers',
-                'feed_info',
-            ],
-            url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/14/gtfs_14.zip',
-        },
-        {
-            agency_key: 'cp',
-            exclude: [
-                'fare_attributes',
-                'fare_rules',
-                'transfers',
-                'feed_info',
-            ],
-            url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/3/gtfs_3.zip',
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=71&u=web',
         },
         {
             agency_key: 'sulfertagus',
@@ -68,10 +35,10 @@ const gtfsImportConfiguration = {
                 'feed_info',
             ],
             url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/21/gtfs_21.zip',
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=21&u=web',
         },
         {
-            agency_key: 'transtejo',
+            agency_key: 'tcb',
             exclude: [
                 'fare_attributes',
                 'fare_rules',
@@ -79,18 +46,7 @@ const gtfsImportConfiguration = {
                 'feed_info',
             ],
             url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/4/gtfs_4.zip',
-        },
-        {
-            agency_key: 'rodoviaria-de-lisboa',
-            exclude: [
-                'fare_attributes',
-                'fare_rules',
-                'transfers',
-                'feed_info',
-            ],
-            url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/61/gtfs_61.zip',
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=41&u=web',
         },
         {
             agency_key: 'tst',
@@ -101,7 +57,62 @@ const gtfsImportConfiguration = {
                 'feed_info',
             ],
             url:
-                'https://www.transporlis.pt/Portals/0/OpenData/gtfs/zip/11/gtfs_11.zip',
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=11&u=web',
+        },
+        {
+            agency_key: 'cp',
+            exclude: [
+                'fare_attributes',
+                'fare_rules',
+                'transfers',
+                'feed_info',
+            ],
+            url:
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=3&u=web',
+        },
+        {
+            agency_key: 'fertagus',
+            exclude: [
+                'fare_attributes',
+                'fare_rules',
+                'transfers',
+                'feed_info',
+            ],
+            url:
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=13&u=web',
+        },
+        {
+            agency_key: 'metro-lisboa',
+            exclude: [
+                'fare_attributes',
+                'fare_rules',
+                'transfers',
+                'feed_info',
+            ],
+            url:
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=2&u=web',
+        },
+        {
+            agency_key: 'mts',
+            exclude: [
+                'fare_attributes',
+                'fare_rules',
+                'transfers',
+                'feed_info',
+            ],
+            url:
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=12&u=web',
+        },
+        {
+            agency_key: 'soflusa',
+            exclude: [
+                'fare_attributes',
+                'fare_rules',
+                'transfers',
+                'feed_info',
+            ],
+            url:
+                'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=4&u=web',
         },
     ],
 }

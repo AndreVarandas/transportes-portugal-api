@@ -1,61 +1,61 @@
 {
-  "name": "transportes-portugal-api",
-  "version": "0.0.0-development",
-  "description": "",
-  "main": "index.js",
-  "private": true,
-  "scripts": {
-    "postinstall": "npm run build",
-    "build": "rimraf dist && tsc",
-    "dev": "SKIP_IMPORT=true ts-node-dev $NODE_DEBUG_OPTION ./src/server.ts",
-    "prestart": "npm run build",
-    "start": "node ./dist/server.js",
-    "commit": "git-cz",
-    "prod": "npm run build && npm run start",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
-    "lint": "tslint -p tsconfig.json",
-    "semantic-release": "semantic-release"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/AndreVarandas/transportes-portugal-api.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/AndreVarandas/transportes-portugal-api/issues"
-  },
-  "homepage": "https://github.com/AndreVarandas/transportes-portugal-api#readme",
-  "dependencies": {
-    "@types/express": "^4.16.0",
-    "@types/mongoose": "^5.3.25",
-    "typescript": "^3.2.2",
-    "rimraf": "^3.0.0",
-    "body-parser": "^1.18.3",
-    "express": "^4.16.4",
-    "gtfs": "^1.8.7",
-    "mongoose": "^5.7.5"
-  },
-  "devDependencies": {
-    "@semantic-release/github": "^7.0.0",
-    "commitizen": "^4.0.0",
-    "cz-conventional-changelog": "^3.0.0",
-    "husky": "^4.1.0",
-    "prettier": "^2.0.0",
-    "semantic-release": "^17.2.3",
-    "ts-node-dev": "^1.0.0-pre.32",
-    "tslint": "^5.12.0",
-    "tslint-config-prettier": "^1.17.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint"
+    "name": "transportes-portugal-api",
+    "version": "0.0.0-development",
+    "description": "",
+    "main": "index.js",
+    "private": true,
+    "scripts": {
+        "postinstall": "npm run build",
+        "build": "rimraf dist && tsc",
+        "dev": "SKIP_IMPORT=false ts-node-dev $NODE_DEBUG_OPTION ./src/server.ts",
+        "prestart": "npm run build",
+        "start": "node ./dist/server.js",
+        "commit": "git-cz",
+        "prod": "npm run build && npm run start",
+        "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+        "lint": "tslint -p tsconfig.json",
+        "semantic-release": "semantic-release"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/AndreVarandas/transportes-portugal-api.git"
+    },
+    "keywords": [],
+    "author": "André Varandas, <andre.m.varandas@gmail.com>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/AndreVarandas/transportes-portugal-api/issues"
+    },
+    "homepage": "https://github.com/AndreVarandas/transportes-portugal-api#readme",
+    "dependencies": {
+        "@types/express": "^4.16.0",
+        "@types/mongoose": "^5.3.25",
+        "typescript": "^3.2.2",
+        "rimraf": "^3.0.0",
+        "body-parser": "^1.18.3",
+        "express": "^4.16.4",
+        "gtfs": "^1.8.7",
+        "mongoose": "^5.7.5"
+    },
+    "devDependencies": {
+        "@semantic-release/github": "^7.0.0",
+        "commitizen": "^4.0.0",
+        "cz-conventional-changelog": "^3.0.0",
+        "husky": "^4.1.0",
+        "prettier": "^2.0.0",
+        "semantic-release": "^17.2.3",
+        "ts-node-dev": "^1.0.0-pre.32",
+        "tslint": "^5.12.0",
+        "tslint-config-prettier": "^1.17.0"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "npm run lint"
+        }
+    },
+    "config": {
+        "commitizen": {
+            "path": "./node_modules/cz-conventional-changelog"
+        }
     }
-  },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
-  }
 }

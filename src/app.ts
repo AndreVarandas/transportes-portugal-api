@@ -60,7 +60,7 @@ class App {
      * all the application lifecycle.
      */
     private static setupImporter() {
-        if (!process.env.SKIP_IMPORT) {
+        if (process.env.SKIP_IMPORT === 'false') {
             return new GtfsImporter()
         }
     }
