@@ -6,9 +6,7 @@ branches:
 notifications:
   email: false
 node_js:
-  - '10'
-before_install:
-  - npm i -g npm@^6.4.0
+  - '16'
 before_script:
   - npm prune
 script:
