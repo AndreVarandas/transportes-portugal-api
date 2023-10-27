@@ -75,6 +75,7 @@ npm start
 - **Transtejo** - agency_key: 'transtejo'
 - **Rodoviária** de Lisboa - agency_key: 'rodoviaria-de-lisboa'
 - **Transportes** Sul do Tejo - agency_key: 'tst'
+- **Metro do Porto** - agency_key: 'metro-porto'
 
 ## Examples
 
