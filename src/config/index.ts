@@ -114,6 +114,17 @@ const gtfsImportConfiguration = {
             url:
                 'https://www.transporlis.pt/desktopmodules/trp_opendata/ajax/downloadFile.ashx?op=4&u=web',
         },
+        {
+            agency_key: 'stcp',
+            exclude: [
+                'fare_attributes',
+                'fare_rules',
+                'transfers',
+                'feed_info',
+            ],
+            url:
+                'https://opendata.porto.digital/dataset/5275c986-592c-43f5-8f87-aabbd4e4f3a4/resource/1f845744-1962-4108-a20c-ac3357d0957b/download/gtfs-stcp.zip',
+        }
     ],
 }
 
