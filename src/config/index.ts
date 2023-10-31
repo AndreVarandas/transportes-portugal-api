@@ -124,7 +124,18 @@ const gtfsImportConfiguration = {
             ],
             url:
                 'https://opendata.porto.digital/dataset/5275c986-592c-43f5-8f87-aabbd4e4f3a4/resource/1f845744-1962-4108-a20c-ac3357d0957b/download/gtfs-stcp.zip',
-        }
+        },
+        {
+            agency_key: 'metro-porto',
+            exclude: [
+                'fare_attributes',
+                'fare_rules',
+                'transfers',
+                'feed_info',
+            ],
+            url:
+                'https://opendata.porto.digital/dataset/15f22603-a216-492a-ab1c-40b1d8aa2f08/resource/fdaaddbe-4782-4f4e-9a30-98caedce8dc5/download/gtfs_mdp_11_09_2023.zip',
+        },
     ],
 }
 
