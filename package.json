@@ -33,7 +33,7 @@
         "typescript": "^3.2.2",
         "rimraf": "^3.0.0",
         "body-parser": "^1.20.3",
-        "express": "^4.21.0",
+        "express": "^4.21.1",
         "gtfs": "^1.8.7",
         "mongoose": "^5.13.20"
     },
