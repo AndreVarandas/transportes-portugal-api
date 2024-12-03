@@ -35,7 +35,7 @@
         "body-parser": "^1.20.3",
         "express": "^4.21.0",
         "gtfs": "^1.8.7",
-        "mongoose": "^5.13.20"
+        "mongoose": "^8.8.3"
     },
     "devDependencies": {
         "@semantic-release/github": "^7.0.0",
