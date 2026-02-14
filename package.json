@@ -32,8 +32,8 @@
         "@types/mongoose": "^5.3.25",
         "typescript": "^3.2.2",
         "rimraf": "^3.0.0",
-        "body-parser": "^1.20.3",
-        "express": "^4.21.2",
+        "body-parser": "^1.20.4",
+        "express": "^4.22.1",
         "gtfs": "^1.8.7",
         "mongoose": "^8.9.5"
     },
