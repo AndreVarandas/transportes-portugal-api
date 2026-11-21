@@ -2,19 +2,21 @@
     "name": "transportes-portugal-api",
     "version": "0.0.0-development",
     "description": "",
-    "main": "index.js",
     "private": true,
     "scripts": {
-        "postinstall": "npm run build",
-        "build": "rimraf dist && tsc",
-        "dev": "SKIP_IMPORT=false ts-node-dev $NODE_DEBUG_OPTION ./src/server.ts",
+        "build": "node -e \"require('node:fs').rmSync('dist', {recursive: true, force: true})\" && tsc",
+        "dev": "tsx watch ./src/http/server.ts",
         "prestart": "npm run build",
-        "start": "node ./dist/server.js",
-        "commit": "git-cz",
-        "prod": "npm run build && npm run start",
-        "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
-        "lint": "tslint -p tsconfig.json",
-        "semantic-release": "semantic-release"
+        "start": "node ./dist/http/server.js",
+        "demo": "npm start -- --demo",
+        "format": "prettier --write \"src/**/*.ts\" \"test/**/*.cjs\" eslint.config.mjs .husky/install.mjs",
+        "lint": "eslint . --max-warnings=0 && npm run format:check && tsc --noEmit",
+        "import": "node ./dist/transit/import-cli.js",
+        "preimport": "npm run build",
+        "test": "npm run build && node --test test/*.test.cjs",
+        "prepare": "node .husky/install.mjs",
+        "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.cjs\" eslint.config.mjs .husky/install.mjs",
+        "lint:staged": "lint-staged"
     },
     "repository": {
         "type": "git",
@@ -28,34 +30,36 @@
     },
     "homepage": "https://github.com/AndreVarandas/transportes-portugal-api#readme",
     "dependencies": {
-        "@types/express": "^4.16.0",
-        "@types/mongoose": "^5.3.25",
-        "typescript": "^3.2.2",
-        "rimraf": "^3.0.0",
-        "body-parser": "^1.20.3",
-        "express": "^4.21.2",
-        "gtfs": "^1.8.7",
-        "mongoose": "^8.9.5"
+        "@hono/node-server": "^2.1.11",
+        "csv-parse": "^7.0.3",
+        "hono": "^4.13.19",
+        "swagger-ui-dist": "^5.35.1",
+        "typescript": "~6.0.3",
+        "yauzl": "^3.4.0"
     },
     "devDependencies": {
-        "@semantic-release/github": "^7.0.0",
-        "commitizen": "^4.3.0",
-        "cz-conventional-changelog": "^3.0.0",
-        "husky": "^8.0.3",
-        "prettier": "^2.0.0",
-        "semantic-release": "^21.0.1",
-        "ts-node-dev": "^1.0.0-pre.32",
-        "tslint": "^5.12.0",
-        "tslint-config-prettier": "^1.17.0"
+        "@eslint/js": "^10.0.1",
+        "@types/node": "^26.6.6",
+        "@types/yauzl": "^3.4.0",
+        "eslint": "^10.15.0",
+        "eslint-config-prettier": "^10.1.8",
+        "globals": "^17.14.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^17.6.1",
+        "prettier": "^3.10.1",
+        "tsx": "^4.23.15",
+        "typescript-eslint": "^8.73.0"
     },
-    "husky": {
-        "hooks": {
-            "pre-commit": "npm run lint"
-        }
+    "engines": {
+        "node": ">=26.13.1"
     },
-    "config": {
-        "commitizen": {
-            "path": "./node_modules/cz-conventional-changelog"
-        }
+    "lint-staged": {
+        "*.{js,cjs,mjs,ts}": [
+            "eslint --fix --max-warnings=0",
+            "prettier --write"
+        ]
+    },
+    "scarfSettings": {
+        "enabled": false
     }
 }
