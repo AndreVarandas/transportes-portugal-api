@@ -1,0 +1,51 @@
+name: Checks
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          HUSKY: "0"
+      - run: npm run lint
+      - run: npm test
+      - name: Smoke-test Docker Compose
+        env:
+          COMPOSE_PROJECT_NAME: transit-ci
+        run: |
+          trap 'docker compose down --volumes' EXIT
+          docker compose up -d --build --wait
+          docker compose run --rm -T \
+            -v "$PWD/test/fixtures/sample-gtfs.zip:/tmp/sample-gtfs.zip:ro" \
+            api node dist/transit/import-cli.js demo /tmp/sample-gtfs.zip
+          curl -fsS http://127.0.0.1:3000/api/v2/feeds/demo/routes/r1
+          docker compose up -d --force-recreate --wait
+          curl -fsS http://127.0.0.1:3000/api/v2/feeds/demo/routes/r1
+
+  release-please:
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_type == 'branch' &&
+      github.ref_name == github.event.repository.default_branch
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: release-please
+    steps:
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1

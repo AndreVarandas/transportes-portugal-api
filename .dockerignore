@@ -1,0 +1,9 @@
+*
+!package.json
+!package-lock.json
+!.npmrc
+!.husky/
+!.husky/install.mjs
+!tsconfig.json
+!src/
+!src/**
