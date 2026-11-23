@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/AndreVarandas/transportes-portugal-api/compare/v2.0.0...v2.1.0) (2026-11-23)
+
+
+### Features
+
+* support route exploration and live transit updates ([ace9176](https://github.com/AndreVarandas/transportes-portugal-api/commit/ace9176cd5e7a37538068536f491d9687e8c1bd8))
+
 ## [2.0.0](https://github.com/AndreVarandas/transportes-portugal-api/compare/v1.0.2...v2.0.0) (2026-11-21)
 
 
