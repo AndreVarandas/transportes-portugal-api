@@ -337,6 +337,99 @@ export function queryNearbyStops(
     }));
 }
 
+// HeadSigns of the trips that call at a stop, grouped by route. Some operators
+// (for example CP) encode each direction as its own route with the same public
+// name, so the destination is what tells them apart.
+export function queryStopRouteHeadsigns(
+  db: DatabaseSync,
+  feedKey: string,
+  stopId: string,
+) {
+  const rows = db
+    .prepare(
+      `
+        SELECT DISTINCT trip.route_id AS routeId,
+          COALESCE(NULLIF(times.record ->> '$.stop_headsign', ''),
+            NULLIF(trip.record ->> '$.trip_headsign', '')) AS headsign
+        FROM stop_times AS times
+        JOIN trips AS trip
+          ON trip.feed_key = times.feed_key AND trip.trip_id = times.trip_id
+        WHERE times.feed_key = ? AND times.stop_id = ?
+        ORDER BY trip.route_id, headsign
+      `,
+    )
+    .all(feedKey, stopId) as { routeId: string; headsign: string | null }[];
+  const result = new Map<string, string[]>();
+  for (const { routeId, headsign } of rows) {
+    if (!headsign) continue;
+    const list = result.get(routeId) ?? [];
+    if (!list.includes(headsign)) list.push(headsign);
+    result.set(routeId, list);
+  }
+  return result;
+}
+
+// Every route that calls at a stop, regardless of the current time window, so
+// the explorer can show the whole network rather than only active departures.
+export function queryStopRoutes(
+  db: DatabaseSync,
+  feedKey: string,
+  stopId: string,
+  limit: number,
+  offset: number,
+) {
+  return db
+    .prepare(
+      `
+        SELECT route.feed_key, route.record
+        FROM stop_times AS times
+        JOIN trips AS trip
+          ON trip.feed_key = times.feed_key AND trip.trip_id = times.trip_id
+        JOIN routes AS route
+          ON route.feed_key = trip.feed_key AND route.route_id = trip.route_id
+        WHERE times.feed_key = ? AND times.stop_id = ?
+        GROUP BY route.feed_key, route.route_id
+        ORDER BY route.route_id
+        LIMIT ? OFFSET ?
+      `,
+    )
+    .all(feedKey, stopId, limit, offset)
+    .map(readRecord);
+}
+
+function likePattern(query: string) {
+  return `%${query.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+}
+
+// Cross-feed stop lookup by name or code, mirroring the boardable-stop filter
+// used by nearby search. Prefix matches sort first, then feed and stop ID.
+export function querySearchStops(
+  db: DatabaseSync,
+  query: string,
+  limit: number,
+  offset: number,
+) {
+  const contains = likePattern(query);
+  const prefix = `${query.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+  return db
+    .prepare(
+      `
+        SELECT item.feed_key, item.record
+        FROM stops AS item
+        WHERE COALESCE(NULLIF(item.record ->> '$.location_type', ''), 0) IN (0, 4)
+          AND (item.record ->> '$.stop_name' LIKE ? ESCAPE '\\'
+            OR item.record ->> '$.stop_code' LIKE ? ESCAPE '\\')
+        ORDER BY
+          CASE WHEN item.record ->> '$.stop_name' LIKE ? ESCAPE '\\'
+            THEN 0 ELSE 1 END,
+          item.feed_key, item.stop_id
+        LIMIT ? OFFSET ?
+      `,
+    )
+    .all(contains, contains, prefix, limit, offset)
+    .map(readRecord);
+}
+
 export function queryTransit(
   db: DatabaseSync,
   resource: Resource,

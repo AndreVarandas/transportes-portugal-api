@@ -154,14 +154,18 @@ Feed keys scope resource IDs. A route or stop ID may also appear in another feed
 | `/sources` | |
 | `/source-health` | |
 | `/nearby-stops` | Requires `lat` and `lon`. Optional `radius` in kilometres (default 1, maximum 25). |
+| `/stops` | Requires `q` (2 to 100 characters), matched against stop name and code across all feeds. |
 | `/feeds`, `/feeds/{feedKey}` | |
 | `/feeds/{feedKey}/agencies` | |
 | `/feeds/{feedKey}/routes` | `agencyId` |
 | `/feeds/{feedKey}/stops` | `routeId`, `tripId` |
 | `/feeds/{feedKey}/trips` | `routeId`, `serviceId`, `directionId`, `serviceDate` |
+| `/feeds/{feedKey}/routes/{routeId}/patterns` | |
+| `/feeds/{feedKey}/routes/{routeId}/pattern-schedule` | Required `patternId` from `/patterns`. Optional `from` timestamp. |
 | `/feeds/{feedKey}/routes/{routeId}/trips` | `serviceId`, `directionId`, `serviceDate` |
 | `/feeds/{feedKey}/trips/{tripId}/stop-times` | `stopId` |
-| `/feeds/{feedKey}/stops/{stopId}/departures` | `from`, `minutes`, `limit` |
+| `/feeds/{feedKey}/stops/{stopId}/departures` | `from`, `minutes`, `limit`, `routeId` |
+| `/feeds/{feedKey}/stops/{stopId}/routes` | |
 | `/feeds/{feedKey}/stops/{stopId}/stop-times` | `tripId`, `serviceDate` |
 | `/feeds/{feedKey}/trips/{tripId}/frequencies` | |
 | `/feeds/{feedKey}/calendars` | `serviceId` |
@@ -171,6 +175,10 @@ Feed keys scope resource IDs. A route or stop ID may also appear in another feed
 `/sources` lists configured providers even on an empty database. Each item includes the region, transport mode, registry URL, and local feed metadata. `feed: null` means no import or refresh attempt has been recorded. A feed with `importedAt: null` has no queryable snapshot. `/feeds` also includes manually loaded feeds.
 
 Nearby stop search returns platforms, stops, and boarding areas from imported feeds, ordered by distance. Each result includes `feedKey`, `id`, and `distanceMeters`. Use both IDs to open the departure board.
+
+For network exploration, `/stops?q=` finds stops by name or code across feeds (prefix matches first), `/feeds/{feedKey}/stops/{stopId}/routes` lists every route that calls at a stop regardless of the current time window, and `/feeds/{feedKey}/routes/{routeId}/patterns` returns each direction/variant with its ordered stops (names, coordinates and a representative trip's times) and drawn path. Pattern IDs match the fleet endpoint's grouping, so live vehicles join the same way. These endpoints describe the scheduled network; they do not plan journeys.
+
+The pattern schedule returns `first` and `last` published departures on the local civil date of `from` and `next` at or after that instant, including a later published service date. It uses departures at the variant's origin, includes GTFS service running after midnight, and preserves headway windows. Each field is null when no matching service is published.
 
 Departures default to the next 120 minutes from now. Use `from` with an ISO timestamp and UTC offset, and `minutes` from 1 to 1440. The response includes `from`, `until`, and the feed's freshness. The board returns up to `limit` events without offset pagination. A `scheduled` row has a local timestamp with its UTC offset. A `headway` row has a service window and a headway in seconds. The board excludes stops that prohibit pickup on the specific trip. `pickupType` flags conditional boarding and `approximate` identifies publisher-marked approximate stop times. The data comes from scheduled GTFS feeds. Real-time delays and cancellations are outside this endpoint.
 
@@ -195,3 +203,13 @@ Release Please uses the built-in `GITHUB_TOKEN`. In the repository's **Settings 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+### Live fleet and route maps
+
+`GET /api/v2/feeds/{feedKey}/routes/{routeId}/fleet` returns the route variants (patterns) of an imported route, plus live vehicle observations where the operator publishes them. `GET /api/v2/feeds/carris-metropolitana/lines/{lineId}/vehicles` remains the line-number shortcut for Carris Metropolitana's four-digit public lines; it uses the official v2 `/vehicles`, `/lines`, `/patterns/{id}`, and `/shapes/{id}` endpoints and does not require an imported GTFS.
+
+The response's `data` contains `feedKey`, `routeId`, `provider`, `liveSupported`, `synthetic`, `attribution`, `lineId`, `name`, `fetchedAt`, `freshForMs` (90 seconds), `vehicles`, `patterns`, `geometryUnavailable`, and `vehiclesUnavailable`. All timestamps are Unix milliseconds; coordinates in pattern arrays are **latitude, longitude**. Vehicle observations older than ten minutes or over 30 seconds in the future are excluded. Clients must continually age positions and count only recent reports, not claim a total number of operating vehicles. Pattern IDs are normalized by removing operator/version prefixes; validity dates use Europe/Lisbon.
+
+Live sources are Carris Metropolitana (official v2 API), Carris (official GTFS-RT vehicle positions), STCP (Porto Digital FIWare broker), and Metro Lisboa, CP, Fertagus, MTS, and TCB through the official TML GO aggregated realtime hub (`go.tmlmobilidade.pt`, open-data organization snapshot). STCP live trip IDs carry schedule variants that differ from the imported GTFS, so an unmatched trip falls back to the reported route and direction. CP positions come only from that official TML feed — which also carries national services — never from unofficial CP endpoints. Hub IDs carry `[plan][agency]` prefixes that are stripped before joining. Observations are joined to imported GTFS trips; where the hub uses operator-native route IDs (Fertagus, MTS, TCB) an unmatched trip falls back to a route join, and Metro Lisboa joins by line letter because its hub trip IDs are not GTFS trip IDs. Reports that cannot be matched to the requested route are omitted. Vehicles without a matched trip have an empty `patternId` and keep the direction reported by the live source. For every other feed, `liveSupported` is `false` and `vehicles` is empty: that means there is no public live source, not that no vehicles are operating. Patterns come from the imported shapes (up to 30 variants, 20 000 points each); missing or oversized geometry sets `geometryUnavailable` without suppressing positions. The synthetic demo feed is marked `synthetic: true`. `/sources` reports `capabilities.liveVehicles` per operator.
+
+Fleet observations share a 10-second in-process cache; route geometry is cached per feed import, and the Carris Metropolitana catalogue and geometry share a bounded five-minute cache. Concurrent upstream requests are deduplicated. A failed or malformed vehicle feed returns route metadata with `vehiclesUnavailable: true`; clients must not interpret this as zero operating vehicles. Unknown routes return 404, invalid CM line IDs 400, and a failed CM catalogue 502. Live data is operator data even when the server is running with the separate synthetic demo feed.

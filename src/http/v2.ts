@@ -1,3 +1,4 @@
+import { liveProviders } from "../transit/provider-vehicles";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import type { DatabaseSync } from "node:sqlite";
@@ -7,10 +8,14 @@ import {
   listImports,
   queryTransit,
   queryNearbyStops,
+  querySearchStops,
+  queryStopRouteHeadsigns,
+  queryStopRoutes,
   TransitRecord,
 } from "../storage/sqlite";
-import { queryDepartures } from "../storage/departures";
+import { queryDepartures, queryPatternSchedule } from "../storage/departures";
 import { sourceCoverage } from "../transit/coverage";
+import { createRoutePatterns } from "../transit/route-patterns";
 import { sources } from "../transit/sources";
 import { lisbonToday } from "../transit/service-date";
 
@@ -171,6 +176,29 @@ function notFound(c: Context, resource: string) {
   );
 }
 
+function parseScheduleFrom(c: Context, fromText: unknown) {
+  let from = Temporal.Instant.fromEpochMilliseconds(Date.now());
+  if (typeof fromText === "string") {
+    if (
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(
+        fromText,
+      )
+    ) {
+      return badQuery(
+        c,
+        "Use an ISO timestamp with a UTC offset or Z for from.",
+      );
+    }
+    try {
+      from = Temporal.Instant.from(fromText);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      return badQuery(c, "Invalid from timestamp.");
+    }
+  }
+  return from;
+}
+
 function parseList(
   c: Context,
   allowed: Record<string, string>,
@@ -257,6 +285,7 @@ type DetailResource = keyof typeof detailKeys;
 
 export function createV2(db: DatabaseSync) {
   const app = new Hono();
+  const routePatterns = createRoutePatterns(db);
   app.use("*", async (c, next) => {
     if (c.req.method !== "GET" && c.req.method !== "HEAD") {
       c.header("Allow", "GET, HEAD");
@@ -306,6 +335,27 @@ export function createV2(db: DatabaseSync) {
     );
   });
 
+  app.get("/stops", (c) => {
+    const input = parseList(c, { q: "q" });
+    if (input instanceof Response) return input;
+    const { limit, offset, conditions } = input;
+    const query = conditions.q;
+    if (typeof query !== "string" || query.length < 2 || query.length > 100) {
+      return badQuery(c, "Use a search text from 2 to 100 characters.");
+    }
+    const rows = querySearchStops(db, query, limit + 1, offset);
+    return c.json(
+      page(
+        rows.map((row) => ({
+          ...normalize("stops", row),
+          feedKey: row.agency_key,
+        })),
+        limit,
+        offset,
+      ),
+    );
+  });
+
   app.get("/source-health", (c) => {
     if (new URL(c.req.url).searchParams.size)
       return badQuery(c, "This endpoint does not take query parameters.");
@@ -337,6 +387,7 @@ export function createV2(db: DatabaseSync) {
         region: source.region,
         mode: source.mode,
         sourceUrl: source.url,
+        capabilities: { routeMap: true, liveVehicles: liveProviders.has(key) },
         feed: snapshots.get(key) ?? null,
       }));
     return c.json(page(rows, limit, offset));
@@ -360,34 +411,22 @@ export function createV2(db: DatabaseSync) {
 
   const scope = "/feeds/:feedKey";
   app.get(`${scope}/stops/:stopId/departures`, (c) => {
-    const input = parseList(c, { from: "from", minutes: "minutes" }, false);
+    const input = parseList(
+      c,
+      { from: "from", minutes: "minutes", routeId: "route_id" },
+      false,
+    );
     if (input instanceof Response) return input;
     const { conditions, limit } = input;
+    const routeId =
+      typeof conditions.route_id === "string" ? conditions.route_id : undefined;
     const minutesText = String(conditions.minutes ?? "120");
     const minutes = Number(minutesText);
     if (!/^\d+$/.test(minutesText) || minutes < 1 || minutes > 1440) {
       return badQuery(c, "Use a window from 1 to 1440 minutes.");
     }
-    const fromText = conditions.from;
-    let from = Temporal.Instant.fromEpochMilliseconds(Date.now());
-    if (typeof fromText === "string") {
-      if (
-        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(
-          fromText,
-        )
-      ) {
-        return badQuery(
-          c,
-          "Use an ISO timestamp with a UTC offset or Z for from.",
-        );
-      }
-      try {
-        from = Temporal.Instant.from(fromText);
-      } catch (error) {
-        if (!(error instanceof RangeError)) throw error;
-        return badQuery(c, "Invalid from timestamp.");
-      }
-    }
+    const from = parseScheduleFrom(c, conditions.from);
+    if (from instanceof Response) return from;
     const feedKey = c.req.param("feedKey");
     const stopId = c.req.param("stopId");
     const feed = getFeed(feedKey);
@@ -400,11 +439,71 @@ export function createV2(db: DatabaseSync) {
     }
     c.header("Cache-Control", "no-store");
     return c.json({
-      data: queryDepartures(db, feedKey, stopId, from, minutes, limit),
+      data: queryDepartures(db, feedKey, stopId, from, minutes, limit, routeId),
       from: from.toString(),
       until: from.add({ minutes }).toString(),
       feed: normalizeFeed(feed),
     });
+  });
+
+  app.get(`${scope}/stops/:stopId/routes`, (c) => {
+    const feedKey = c.req.param("feedKey");
+    const stopId = c.req.param("stopId");
+    if (!feedKey || !hasFeed(db, feedKey)) return notFound(c, "Feed");
+    const input = parseList(c, {});
+    if (input instanceof Response) return input;
+    const { limit, offset } = input;
+    if (
+      !queryTransit(db, "stops", { agency_key: feedKey, stop_id: stopId }, 1, 0)
+        .length
+    ) {
+      return notFound(c, "Stop");
+    }
+    const rows = queryStopRoutes(db, feedKey, stopId, limit + 1, offset);
+    const headsigns = queryStopRouteHeadsigns(db, feedKey, stopId);
+    return c.json(
+      page(
+        rows.map((row) => {
+          const route = normalize("routes", row);
+          return {
+            ...route,
+            headsigns: headsigns.get(String(route.id)) ?? [],
+          };
+        }),
+        limit,
+        offset,
+      ),
+    );
+  });
+
+  app.get(`${scope}/routes/:routeId/patterns`, (c) => {
+    const feedKey = c.req.param("feedKey");
+    if (!feedKey || !hasFeed(db, feedKey)) return notFound(c, "Feed");
+    const data = routePatterns(feedKey, c.req.param("routeId"));
+    return data ? c.json({ data }) : notFound(c, "Route");
+  });
+
+  app.get(`${scope}/routes/:routeId/pattern-schedule`, (c) => {
+    const input = parseList(c, { from: "from", patternId: "patternId" }, false);
+    if (input instanceof Response) return input;
+    const { patternId } = input.conditions;
+    if (typeof patternId !== "string")
+      return badQuery(c, "Provide a patternId.");
+    const from = parseScheduleFrom(c, input.conditions.from);
+    if (from instanceof Response) return from;
+    const { feedKey, routeId } = c.req.param();
+    const feed = getFeed(feedKey);
+    if (!feed?.imported_at) return notFound(c, "Feed");
+    const route = routePatterns(feedKey, routeId);
+    if (!route) return notFound(c, "Route");
+    const pattern = route.patterns.find(({ id }) => id === patternId);
+    if (!pattern) return notFound(c, "Pattern");
+    const origin = pattern.stops[0];
+    const data = origin
+      ? queryPatternSchedule(db, feedKey, routeId, pattern.id, origin.id, from)
+      : { first: null, last: null, next: null };
+    c.header("Cache-Control", "no-store");
+    return c.json({ data, from: from.toString(), feed: normalizeFeed(feed) });
   });
 
   const list =

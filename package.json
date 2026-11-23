@@ -32,6 +32,7 @@
     "dependencies": {
         "@hono/node-server": "^2.1.11",
         "csv-parse": "^7.0.3",
+        "gtfs-realtime-bindings": "^3.0.0",
         "hono": "^4.13.19",
         "swagger-ui-dist": "^5.35.1",
         "typescript": "~6.0.3",

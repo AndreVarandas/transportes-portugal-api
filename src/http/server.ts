@@ -11,7 +11,7 @@ async function main() {
     await importFeed(
       db,
       "demo",
-      join(__dirname, "../../test/fixtures/sample-gtfs.zip"),
+      join(__dirname, "../../test/fixtures/demo-gtfs.zip"),
       undefined,
     );
     console.log(

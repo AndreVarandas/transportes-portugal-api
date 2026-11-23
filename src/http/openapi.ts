@@ -26,6 +26,52 @@ const optionalTime = nullable(time);
 const optionalTimestamp = nullable(timestamp);
 
 const schemas = {
+  LiveFleet: object({
+    lineId: string,
+    name: string,
+    fetchedAt: number,
+    freshForMs: number,
+    geometryUnavailable: { type: "boolean" },
+    vehiclesUnavailable: { type: "boolean" },
+    vehicles: array(
+      object({
+        id: string,
+        patternId: string,
+        direction: optionalInteger,
+        latitude: number,
+        longitude: number,
+        bearing: nullable(number),
+        observedAt: number,
+      }),
+    ),
+    patterns: array(
+      object({
+        id: string,
+        headsign: string,
+        direction: optionalInteger,
+        coordinates: array({
+          type: "array",
+          items: number,
+          minItems: 2,
+          maxItems: 2,
+          description: "Latitude, longitude pair.",
+        }),
+      }),
+    ),
+  }),
+  RouteFleet: {
+    allOf: [
+      ref("LiveFleet"),
+      object({
+        feedKey: string,
+        routeId: string,
+        provider: string,
+        liveSupported: { type: "boolean" },
+        synthetic: { type: "boolean" },
+        attribution: string,
+      }),
+    ],
+  },
   Feed: object({
     key: string,
     importedAt: optionalTimestamp,
@@ -49,6 +95,10 @@ const schemas = {
     region: string,
     mode: string,
     sourceUrl: string,
+    capabilities: object({
+      routeMap: { type: "boolean" },
+      liveVehicles: { type: "boolean" },
+    }),
     feed: nullable(ref("Feed")),
   }),
   Agency: object({
@@ -69,6 +119,9 @@ const schemas = {
     color: optionalText,
     textColor: optionalText,
   }),
+  StopRoute: {
+    allOf: [ref("Route"), object({ headsigns: array(string) })],
+  },
   Stop: object({
     id: string,
     code: optionalText,
@@ -83,6 +136,42 @@ const schemas = {
   NearbyStop: {
     allOf: [ref("Stop"), object({ feedKey: string, distanceMeters: integer })],
   },
+  SearchStop: {
+    allOf: [ref("Stop"), object({ feedKey: string })],
+  },
+  PatternStop: object({
+    sequence: integer,
+    id: string,
+    name: optionalText,
+    code: optionalText,
+    latitude: nullable(number),
+    longitude: nullable(number),
+    arrivalTime: optionalTime,
+    departureTime: optionalTime,
+    pickupType: integer,
+    dropOffType: integer,
+  }),
+  RoutePattern: object({
+    id: string,
+    headsign: string,
+    direction: optionalInteger,
+    tripId: string,
+    stops: array(ref("PatternStop")),
+    coordinates: array({
+      type: "array",
+      items: number,
+      minItems: 2,
+      maxItems: 2,
+      description: "Latitude, longitude pair.",
+    }),
+  }),
+  RoutePatterns: object({
+    feedKey: string,
+    routeId: string,
+    patterns: array(ref("RoutePattern")),
+    geometryUnavailable: { type: "boolean" },
+    patternsTruncated: { type: "boolean" },
+  }),
   Departure: object({
     kind: { enum: ["scheduled", "headway"] },
     serviceDate: date,
@@ -309,8 +398,53 @@ export const openapi = {
     "Stops",
     "Trips and times",
     "Calendars and shapes",
+    "Live fleet",
   ].map((name) => ({ name })),
   paths: {
+    "/feeds/carris-metropolitana/lines/{lineId}/vehicles": {
+      get: {
+        tags: ["Live fleet"],
+        operationId: "liveFleet",
+        summary: "Carris Metropolitana positions and current route variants",
+        description:
+          "Timestamps are Unix milliseconds. Count only observations younger than freshForMs. Positions older than ten minutes are omitted. Does not infer active service from schedules.",
+        parameters: [
+          {
+            name: "lineId",
+            in: "path",
+            required: true,
+            schema: { type: "string", pattern: "^[0-9]{4}$" },
+          },
+        ],
+        responses: {
+          200: jsonResponse(
+            "Live fleet snapshot",
+            object({ data: ref("LiveFleet") }),
+          ),
+          400: jsonResponse("Invalid line ID", ref("Error")),
+          404: jsonResponse("Unknown line", ref("Error")),
+          502: jsonResponse("Live provider unavailable", ref("Error")),
+        },
+      },
+    },
+    [`${scope}/routes/{routeId}/fleet`]: {
+      get: {
+        tags: ["Live fleet"],
+        operationId: "routeFleet",
+        summary: "Route variants and live vehicle positions for any feed",
+        description:
+          "Returns the route variants (patterns) of an imported route, plus live vehicle observations where the operator publishes them: carris-metropolitana, carris, stcp, metro-lisboa, cp, fertagus, mts, and tcb. Other feeds return liveSupported: false with an empty vehicles array, which means there is no public live source, not that no vehicles are operating. Vehicles are joined to imported GTFS trips; unmatched observations are omitted or joined by route where the live source uses native route IDs. Timestamps are Unix milliseconds; pattern coordinates are latitude, longitude. Count only observations younger than freshForMs. The synthetic demo feed is marked synthetic: true. Does not infer active service from schedules.",
+        parameters: [feed, route],
+        responses: {
+          200: jsonResponse(
+            "Route fleet snapshot",
+            object({ data: ref("RouteFleet") }),
+          ),
+          404: jsonResponse("Feed or route not found.", ref("Error")),
+          502: jsonResponse("Live provider unavailable", ref("Error")),
+        },
+      },
+    },
     "/nearby-stops": operation(
       "Stops",
       "nearbyStops",
@@ -325,6 +459,22 @@ export const openapi = {
           maximum: 25,
           default: 1,
         }),
+      ],
+    ),
+    "/stops": operation(
+      "Stops",
+      "searchStops",
+      "Search stops by name or code across all feeds",
+      "SearchStop",
+      [
+        {
+          ...queryParameter(
+            "q",
+            "Search text matched against stop name and code (2 to 100 characters).",
+          ),
+          required: true,
+          example: "Rossio",
+        },
       ],
     ),
     "/source-health": {
@@ -382,6 +532,61 @@ export const openapi = {
       [feed, route],
       false,
     ),
+    [`${scope}/routes/{routeId}/patterns`]: {
+      get: {
+        tags: ["Routes and agencies"],
+        operationId: "routePatterns",
+        summary: "Route variants with ordered stops, times and geometry",
+        description:
+          "Static anatomy of a route for exploration: each direction/variant with its headsign, a representative trip ID, the ordered stop list (names, coordinates and that trip's scheduled times) and the drawn path. Variants use the same grouping as the fleet endpoint so live vehicles join the same way. Times belong to the representative trip's service days. geometryUnavailable marks missing or oversized paths; patternsTruncated marks routes with more than 30 variants.",
+        parameters: [feed, route],
+        responses: {
+          200: jsonResponse(
+            "Route variants and their stops.",
+            object({ data: ref("RoutePatterns") }),
+          ),
+          404: jsonResponse("Feed or route not found.", ref("Error")),
+        },
+      },
+    },
+    [`${scope}/routes/{routeId}/pattern-schedule`]: {
+      get: {
+        tags: ["Routes and agencies"],
+        operationId: "patternSchedule",
+        summary: "Scheduled service at the origin of a route variant",
+        description:
+          "First and last departures on the current local civil date and the next departure at or after from, including later published dates. Active headway windows are returned as windows. Each result can be null when no matching service is published.",
+        parameters: [
+          feed,
+          route,
+          {
+            ...queryParameter("patternId", "Pattern ID returned by /patterns."),
+            required: true,
+          },
+          queryParameter(
+            "from",
+            "ISO timestamp with UTC offset. Defaults to the current instant.",
+            timestamp,
+          ),
+        ],
+        responses: {
+          200: jsonResponse(
+            "Pattern schedule and feed freshness.",
+            object({
+              data: object({
+                first: { anyOf: [ref("Departure"), { type: "null" }] },
+                last: { anyOf: [ref("Departure"), { type: "null" }] },
+                next: { anyOf: [ref("Departure"), { type: "null" }] },
+              }),
+              from: timestamp,
+              feed: ref("Feed"),
+            }),
+          ),
+          400: jsonResponse("Invalid query parameters.", ref("Error")),
+          404: jsonResponse("Feed, route or pattern not found.", ref("Error")),
+        },
+      },
+    },
     [`${scope}/routes/{routeId}/trips`]: operation(
       "Trips and times",
       "listRouteTrips",
@@ -422,6 +627,7 @@ export const openapi = {
             maximum: 1440,
             default: 120,
           }),
+          queryParameter("routeId", "Only departures for this route."),
           pagination[0],
         ],
         responses: {
@@ -440,6 +646,13 @@ export const openapi = {
         },
       },
     },
+    [`${scope}/stops/{stopId}/routes`]: operation(
+      "Stops",
+      "listStopRoutes",
+      "List every route that calls at a stop",
+      "StopRoute",
+      [feed, stop],
+    ),
     [`${scope}/stops/{stopId}/stop-times`]: operation(
       "Stops",
       "listStopTimesForStop",
